@@ -1,7 +1,6 @@
 package matrix
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -35,10 +34,8 @@ func (m Matrix) RoadLengthBetween(c1, c2 string) (dist int, e error) {
 
 	if c1 == "Lourel" || c2 == "Lourel" {
 		if int(c1[0])-67 <= 9 {
-			fmt.Println("first")
 			return strconv.Atoi(m[int(c1[0])-67][int(c2[0])-65])
 		} else {
-			fmt.Println("second")
 			return strconv.Atoi(m[int(c1[0])-67][int(c2[0])-66])
 		}
 	}
