@@ -1,0 +1,6 @@
+Developed by Scott Kirkpatric with other reserchers.
+Annealing é o processo metalurgico que consiste em aquecer um solido e depois deixa-lo arrefecer até que cristalize. Os atómos do material tem energia muito elevada a elevadas temperaturas. Isto oferece liberdade para que os atómos se restructurem. A medida que arrefecem os atomos perdem energia.Idealmente a temperatura deve decrescer a um ritmo lento pois permitirá aos atómos formarem uma structura em forma de cristal bastante mais consistente, formando uma metal mais duradouro.
+
+O Algortimo Simulated Annealing procura simular este processo. O Algoritmo começa com uma temperatura bem elevada onde os valores de input podem formar diversas maneiras de se organizar. À medida que o algoritmo corre, permite-se que a temperatura caia, restringindo o grau de mudança nas soluções potenciais.
+
+Simulated Annealing é utilizado quando queremos encontrar um minimo.

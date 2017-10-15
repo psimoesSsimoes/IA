@@ -1,0 +1,22 @@
+21
+Atroeira 116 464
+Belmar 184 137
+Cerdeira 134 564
+Douro 272 593
+Encosta 216 374
+Freita 137 417
+Gonta 180 198
+Horta 179 27
+Infantado 233 453
+Jardim 113 36
+Lourel 104 365
+Monte 73 214
+Nelas 115 91
+Oura 222 316
+Pinhal 119 521
+Quebrada 113 274
+Roseiral 95 193
+Serra 96 131
+Teixoso 100 580
+Ulgueira 192 537
+Vilar 180 467
