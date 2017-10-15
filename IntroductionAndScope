@@ -1,9 +1,0 @@
-IA Objectivo: Algoritmos obtidos por restrições expostas por representações que suportam modelos visando Inteligencia Perceção e Acção.
-
-Se pensarmos no jogo da raposa e em como encontrar um algoritmo que o resolva, ajuda-nos a perceber a definição acima indicada.
-Se fores a https://en.wikipedia.org/wiki/Fox,_goose_and_bag_of_beans_puzzle#/media/File:Fox_goose_beans_puzzle_visualisation.svg verificas que uma representação do problema como uma árvore expoe a restição de que certos caminhos nunca levaram à solução do problema. Através da representação, conseguimos obter a restrição que nos ajudará a escrever/pensar num algoritmo para um modelo com inteligencia, percepção e accão que nos leve a um conjunto de solucões correctas.
-
-Abordagem de Testes Gerados: encontramos uma folha. Se queremos encontrar a que árvore pertence, como agir? bem podemos pegar num livro sobre árvores, percorre-lo à procura de uma imagem que coincida com a folha que estamos a procurar. Portanto o que fazemos é geramos algo (neste caso a folha) com certas propriedades, testamos(percorremos o livros) e obtemos sucessos e falhanços. Esta é uma ideia importante. Portanto se seguirmos esta ideia, devemos gerar um gerador com certas propriedades que fazem geradores bons : não devem ser redundantes ou repetitivo. Devem ser Informavéis, na mesma medida que pensando no problema de cima, se procuramos uma folha com uma certa cor, se nas imagens da página não existir essa cor, não devemos proseguir a analise da imagem.
-
-
-
