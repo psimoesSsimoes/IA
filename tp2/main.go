@@ -12,6 +12,18 @@ import (
 	"github.com/op/go-logging"
 )
 
+func DoLogStuff() {
+
+	var format = logging.MustStringFormatter(
+		`%{color}%{time:15:04:05.000} ▶ %{message}`,
+	)
+	backend2 := logging.NewLogBackend(os.Stderr, "", 0)
+
+	backend2Formatter := logging.NewBackendFormatter(backend2, format)
+	logging.SetBackend(backend2Formatter)
+
+}
+
 func FindInitialTemperature(cities []string, adj matrix.Matrix) float64 {
 
 	LargestsDistances := make([]int, 2)
@@ -24,7 +36,6 @@ func FindInitialTemperature(cities []string, adj matrix.Matrix) float64 {
 			p, err := adj.RoadLengthBetween(cities[i], cities[j])
 			if err == nil {
 				if smallest > p {
-					fmt.Println("entered smallest")
 					smallest = p
 					SmallestsDistances[1] = SmallestsDistances[0]
 					SmallestsDistances[0] = p
@@ -37,7 +48,6 @@ func FindInitialTemperature(cities []string, adj matrix.Matrix) float64 {
 			}
 		}
 	}
-	fmt.Printf("%+v , %+v , %+v ,%+v", LargestsDistances[1], LargestsDistances[0], SmallestsDistances[1], SmallestsDistances[0])
 
 	return float64(LargestsDistances[1] + LargestsDistances[0] - SmallestsDistances[1] - SmallestsDistances[0])
 
@@ -60,10 +70,6 @@ func Anneal(d, temperature float64) bool {
 	}
 }
 
-func Mod(i, len int) int {
-	return i % len
-}
-
 //initialOrder is just a simple shuffle of the array
 func InitialOrder(s []string) []string {
 
@@ -83,111 +89,176 @@ func Length(cities []string, m matrix.Matrix) int {
 	return l
 }
 
-func main() {
+func Calculate2RandomNumbers(cities []string) (int, int) {
+	//seed for random
+	rand.Seed(time.Now().UTC().UnixNano())
+	//The input values are then randomized according to the temperature. A higher temperature will result in more randomization, a lower temperature will result in less
+	//randomization.
+	i1 := int(math.Floor(float64(len(cities)-1) * rand.Float64()))
+	j1 := int(math.Floor(float64(len(cities)-1) * rand.Float64()))
+	//if the 2 indexes are the same, generate again
+	for j1 == i1 {
+		j1 = int(math.Floor(float64(len(cities)-1) * rand.Float64()))
 
+	}
+	return i1, j1
+}
+
+func Distance2FedAnnealing(i1, j1 int, adj matrix.Matrix, order []string) float64 {
+	one, _ := adj.RoadLengthBetween(order[i1], order[i1+1])
+	two, _ := adj.RoadLengthBetween(order[j1], order[j1+1])
+	three, _ := adj.RoadLengthBetween(order[i1], order[j1])
+	four, _ := adj.RoadLengthBetween(order[i1+1], order[j1+1])
+	d := one + two - three - four
+	return float64(d)
+}
+
+func PrintSolutions(best, worst, first, last Solution, cycle int, d time.Duration) {
 	var log = logging.MustGetLogger("example")
+	DoLogStuff()
+	log.Notice("BEST SOLUTION ORDER:", best.Order)
+	log.Notice("BEST SOLUTION LENGTH: ", best.Length)
+	log.Notice("BEST SOLUTION FOUND AT TEMP:", best.Temperature)
+	log.Notice("BEST SOLUTION FOUND AT ITERATION:", best.Iteration)
+	log.Error("WORST SOLUTION ORDER:", worst.Order)
+	log.Error("WORST SOLUTION LENGTH:", worst.Length)
+	log.Error("WORST SOLUTION FOUND AT TEMP:", worst.Temperature)
+	log.Error("WORST SOLUTION FOUND AT ITERATION:", worst.Iteration)
+	log.Warning("FIRST SOLUTION ORDER:", first.Order)
+	log.Warning("FIRST SOLUTION LENGTH:", first.Length)
+	log.Warning("FIRST SOLUTION FOUND AT TEMP:", first.Temperature)
+	log.Warning("FIRST SOLUTION FOUND AT ITERATION:", first.Iteration)
+	log.Debugf("LAST SOLUTION ORDER: %+v", last.Order)
+	log.Debugf("LAST SOLUTION LENGTH: %+v", last.Length)
+	log.Debugf("LAST SOLUTION FOUND AT TEMP: %+v", last.Temperature)
+	log.Debugf("LAST SOLUTION ORDER AT ITERATION: %+v", last.Iteration)
+	log.Critical("TOTAL NUMBER OF ITERATIONS:", cycle)
+	log.Critical("TIME OF EXECUTION:", d)
 
-	var format = logging.MustStringFormatter(
-		`%{color}%{time:15:04:05.000} ▶ %{message}`,
+}
+
+type Solution struct {
+	Temperature float64
+	Length      int
+	Order       []string
+	Iteration   int
+}
+
+func main() {
+	//logging stuff
+	//	var log = logging.MustGetLogger("example")
+
+	var (
+		best                          Solution = Solution{}
+		worst                         Solution = Solution{}
+		first                         Solution = Solution{}
+		last                          Solution = Solution{}
+		temperature                   float64
+		orderlength, cycle, sameCount int
+		cities, order                 []string
+		isFirst                       bool
 	)
-	backend2 := logging.NewLogBackend(os.Stderr, "", 0)
-
-	backend2Formatter := logging.NewBackendFormatter(backend2, format)
-	logging.SetBackend(backend2Formatter)
-
-	var cities []string
-	var temperature, delta, temp_at_min /**, temp_at_first, temp_at_last, temp_at_best*/ float64
-	var orderlength, min_order_length int
-	var minOrder, order /**, maxOrder, first, last*/ []string
-	var cycle, sameCount /**, all_it, it_first, it_last*/ int
-
+	const (
+		delta float64 = 0.3
+	)
 	sameCount = 0
-	delta = 0.03
 	cycle = 1
+	isFirst = true
+
 	params := os.Args[1:]
+	//grab params passed to program
 	if params[0] == "all" {
 		cities = []string{"Atroeira", "Belmar", "Cerdeira", "Douro", "Encosta", "Freira", "Gonta", "Horta", "Infantado", "Jardim", "Lourel", "Monte", "Nelas", "Oura", "Pinhal", "Quebrada", "Roseiral", "Serra", "Teixoso", "Ulgueira", "Vilar"}
 	} else {
 		cities = params
 	}
+	//read rows of file
 	rows, err := io.ReadFile("/home/psimoes/Github/IA/tp2/data/CitiesDist.txt")
 	if err != nil {
+		//log.Error("could not open file")
 	}
+	fmt.Println(cities)
+	//create matrix from rows read
 	adj := matrix.CreateAdj(rows)
 	temperature = FindInitialTemperature(cities, adj)
+	worst.Temperature = temperature
+
 	fmt.Print("Initial Temperature: ")
 	fmt.Println(temperature)
-	copy(minOrder[:], cities)
+
+	copy(best.Order[:], cities)
 	order = InitialOrder(cities)
-	minOrder = InitialOrder(cities)
+
+	worst.Order = order
+	best.Order = InitialOrder(cities)
 	orderlength = Length(order, adj)
-	min_order_length = Length(minOrder, adj)
+	best.Length = Length(best.Order, adj)
+	worst.Length = orderlength
+
+	//start measuring algorithm time
+	start := time.Now()
+
 	for sameCount < len(cities) {
+		//for each temperature, the simulated annealing algorithm runs through a number of cycles predeterminated by us
 		for j2 := 0; j2 < len(cities)*len(cities); j2++ {
-			rand.Seed(time.Now().UTC().UnixNano())
-			i1 := int(math.Floor(float64(len(cities)-1) * rand.Float64()))
-			j1 := int(math.Floor(float64(len(cities)-1) * rand.Float64()))
-			fmt.Println(i1)
-			fmt.Println(j1)
-			for j1 == i1 {
-				j1 = int(math.Floor(float64(len(cities)-1) * rand.Float64()))
+			cycle++
+			i1, j1 := Calculate2RandomNumbers(cities)
+			d := Distance2FedAnnealing(i1, j1, adj, order)
 
-			}
-			if i1 >= 20 || j1 >= 20 {
-
-			}
-
-			first, _ := adj.RoadLengthBetween(order[i1], order[i1+1])
-			second, _ := adj.RoadLengthBetween(order[j1], order[j1+1])
-			third, _ := adj.RoadLengthBetween(order[i1], order[j1])
-			fourth, _ := adj.RoadLengthBetween(order[i1+1], order[j1+1])
-			d := first + second - third - fourth
-			if Anneal(float64(d), temperature) {
+			if Anneal(d, temperature) {
+				if isFirst {
+					isFirst = false
+					first.Temperature = temperature
+					first.Order = order
+					first.Length = orderlength
+					first.Iteration = cycle
+				}
+				//If it is determined that we should anneal (j1 is less than i1), then we swap the values
 				if j1 < i1 {
 					k1 := i1
 					i1 = j1
 					j1 = k1
 				}
+				//and we loop between i1 and j1 and swap the values as we progress, i.e, reorders the path
 				for ; j1 > i1; j1-- {
 					i2 := order[i1+1]
 					order[i1+1] = order[j1]
 					order[j1] = i2
 					i1++
 				}
+
+				last.Order = order
+				last.Length = orderlength
+				last.Temperature = temperature
+				last.Iteration = cycle
+
 			}
 		}
-		//see if we found improvements
+
+		//see if we found a worst solution
 		orderlength = Length(order, adj)
-		if orderlength < min_order_length {
-			min_order_length = orderlength
+		if orderlength > worst.Length {
+			worst.Length = orderlength
+			worst.Order = order
+			worst.Temperature = temperature
+			worst.Iteration = cycle
+		}
+		//if we found improvements change best and restart sameCOunt
+		if orderlength < best.Length {
+			best.Length = orderlength
 			for k2 := 0; k2 < len(cities); k2++ {
-				minOrder[k2] = order[k2]
+				best.Order[k2] = order[k2]
 			}
-			temp_at_min = temperature
+			best.Temperature = temperature
+			best.Iteration = cycle
 			sameCount = 0
+			//if not better, inc sameCount
 		} else {
 			sameCount++
 		}
-		temperature *= delta
-		fmt.Println(temperature)
+		// simply reduce the temperature by a fixed amount through each cycle.
+		temperature *= 1 - delta
 		cycle++
 	}
-	log.Notice("BEST SOLUTION ORDER:", minOrder)
-	log.Notice("BEST SOLUTION LENGTH: ", min_order_length)
-	log.Notice("BEST SOLUTION FOUND AT TEMP:", temp_at_min)
-	log.Notice("BEST SOLUTION FOUND AT ITERATION:", temp_at_min)
-	log.Error("WORST SOLUTION ORDER:")
-	log.Error("WORST SOLUTION LENGTH:")
-	log.Error("WORST SOLUTION FOUND AT TEMP:")
-	log.Error("WORST SOLUTION FOUND AT ITERATION:")
-	log.Warning("FIRST SOLUTION ORDER:")
-	log.Warning("FIRST SOLUTION LENGTH:")
-	log.Warning("FIRST SOLUTION FOUND AT TEMP:")
-	log.Warning("FIRST SOLUTION FOUND AT ITERATION:")
-	log.Debugf("LAST SOLUTION ORDER:")
-	log.Debugf("LAST SOLUTION LENGTH:")
-	log.Debugf("LAST SOLUTION FOUND AT TEMP:")
-	log.Debugf("LAST SOLUTION ORDER AT ITERATION:")
-	log.Critical("TOTAL NUMBER OF ITERATIONS:")
-	log.Critical("TIME OF EXECUTION:")
+	PrintSolutions(best, worst, first, last, cycle, time.Since(start))
 }
