@@ -1,6 +1,7 @@
 package matrix
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 )
@@ -26,6 +27,10 @@ func CreateAdj(rows []string) Matrix {
 // as they are ordered by name the first letter of citie is the index we are looking for on the matrix. But for this to work, the order must be bigger ascii corresponds to x and smaller ascii corresponds to y.
 //Ascii table has letter k which isn't included on the cities of the matrix. Thats why we have the if and elses.
 func (m Matrix) RoadLengthBetween(c1, c2 string) (dist int, e error) {
+
+	if c1 == c2 {
+		return -1, errors.New("distances between same cities is 0")
+	}
 	if int(c1[0]) < int(c2[0]) {
 		temp := c1
 		c1 = c2
@@ -55,4 +60,10 @@ func (m Matrix) RoadLengthBetween(c1, c2 string) (dist int, e error) {
 			return strconv.Atoi(m[int(c1[0])-67][int(c2[0])-66])
 		}
 	}
+}
+
+func (m Matrix) MatrixIndexing(row, col int) (int, error) {
+
+	return strconv.Atoi(m[row][col])
+
 }
