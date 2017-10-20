@@ -37,6 +37,8 @@ func (m Matrix) RoadLengthBetween(c1, c2 string) (dist int, e error) {
 		c2 = temp
 	}
 
+	return strconv.Atoi(m[int(c1[0])-66][int(c2[0])-65])
+	/**
 	if c1 == "Lourel" || c2 == "Lourel" {
 		if int(c1[0])-67 <= 9 {
 			return strconv.Atoi(m[int(c1[0])-67][int(c2[0])-65])
@@ -59,7 +61,7 @@ func (m Matrix) RoadLengthBetween(c1, c2 string) (dist int, e error) {
 
 			return strconv.Atoi(m[int(c1[0])-67][int(c2[0])-66])
 		}
-	}
+	}*/
 }
 
 func (m Matrix) MatrixIndexing(row, col int) (int, error) {

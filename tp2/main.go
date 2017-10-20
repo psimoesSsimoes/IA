@@ -55,8 +55,9 @@ func FindInitialTemperature(cities []string, adj matrix.Matrix) float64 {
 
 //Called to determine if annealing should take place.
 func Anneal(d, temperature float64) bool {
-
+	/**If the temperature is below this amount, then the temperature plays no role in determining if annealing will take place or not*/
 	if temperature < 1.0E-4 {
+		//If the temperature is below this threshold then we simply check to see if the distance is greater than 0
 		if d > 0.0 {
 			return true
 		} else {
@@ -86,6 +87,10 @@ func Length(cities []string, m matrix.Matrix) int {
 		d, _ := m.RoadLengthBetween(cities[i], cities[i-1])
 		l += d
 	}
+	//close cycle
+	d, _ := m.RoadLengthBetween(cities[len(cities)-1], cities[0])
+	l += d
+
 	return l
 }
 
@@ -145,8 +150,6 @@ type Solution struct {
 }
 
 func main() {
-	//logging stuff
-	//	var log = logging.MustGetLogger("example")
 
 	var (
 		best                          Solution = Solution{}
@@ -159,7 +162,7 @@ func main() {
 		isFirst                       bool
 	)
 	const (
-		delta float64 = 0.3
+		delta float64 = 0.03
 	)
 	sameCount = 0
 	cycle = 1
@@ -168,25 +171,22 @@ func main() {
 	params := os.Args[1:]
 	//grab params passed to program
 	if params[0] == "all" {
-		cities = []string{"Atroeira", "Belmar", "Cerdeira", "Douro", "Encosta", "Freira", "Gonta", "Horta", "Infantado", "Jardim", "Lourel", "Monte", "Nelas", "Oura", "Pinhal", "Quebrada", "Roseiral", "Serra", "Teixoso", "Ulgueira", "Vilar"}
+		cities = []string{"A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"}
 	} else {
 		cities = params
 	}
-	//read rows of file
-	rows, err := io.ReadFile("/home/psimoes/Github/IA/tp2/data/CitiesDist.txt")
+	//read rows of filrows, err := io.ReadFile("/home/psimoes/Github/IA/tp2/data/CitiesDist.txt")
+	rows, err := io.ReadFile("/home/psimoes/Github/IA/tp2/data/teste1tp2")
 	if err != nil {
-		//log.Error("could not open file")
 	}
+
 	fmt.Println(cities)
 	//create matrix from rows read
 	adj := matrix.CreateAdj(rows)
 	temperature = FindInitialTemperature(cities, adj)
 	worst.Temperature = temperature
 
-	fmt.Print("Initial Temperature: ")
-	fmt.Println(temperature)
-
-	copy(best.Order[:], cities)
+	//copy(best.Order[:], cities)
 	order = InitialOrder(cities)
 
 	worst.Order = order
@@ -204,12 +204,22 @@ func main() {
 			cycle++
 			i1, j1 := Calculate2RandomNumbers(cities)
 			d := Distance2FedAnnealing(i1, j1, adj, order)
-
+			//copia por valor quando devia fazer copia por referencia
+			if orderlength > worst.Length {
+				worst.Length = orderlength
+				temporary := make([]string, len(order))
+				copy(temporary, order)
+				worst.Order = temporary
+				worst.Temperature = temperature
+				worst.Iteration = cycle
+			}
 			if Anneal(d, temperature) {
 				if isFirst {
 					isFirst = false
 					first.Temperature = temperature
-					first.Order = order
+					temporary := make([]string, len(order))
+					copy(temporary, order)
+					first.Order = temporary
 					first.Length = orderlength
 					first.Iteration = cycle
 				}
@@ -227,37 +237,34 @@ func main() {
 					i1++
 				}
 
-				last.Order = order
-				last.Length = orderlength
-				last.Temperature = temperature
-				last.Iteration = cycle
-
 			}
-		}
 
+		}
 		//see if we found a worst solution
 		orderlength = Length(order, adj)
-		if orderlength > worst.Length {
-			worst.Length = orderlength
-			worst.Order = order
-			worst.Temperature = temperature
-			worst.Iteration = cycle
-		}
+
 		//if we found improvements change best and restart sameCOunt
 		if orderlength < best.Length {
 			best.Length = orderlength
-			for k2 := 0; k2 < len(cities); k2++ {
-				best.Order[k2] = order[k2]
-			}
+			temporary := make([]string, len(order))
+			copy(temporary, order)
+
+			best.Order = temporary
+
 			best.Temperature = temperature
 			best.Iteration = cycle
 			sameCount = 0
-			//if not better, inc sameCount
 		} else {
 			sameCount++
 		}
+
+		last.Order = order
+		last.Length = orderlength
+		last.Temperature = temperature
+		last.Iteration = cycle
+
 		// simply reduce the temperature by a fixed amount through each cycle.
-		temperature *= 1 - delta
+		temperature *= delta
 		cycle++
 	}
 	PrintSolutions(best, worst, first, last, cycle, time.Since(start))
